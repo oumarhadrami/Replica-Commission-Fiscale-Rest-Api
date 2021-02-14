@@ -1,6 +1,5 @@
 package com.mohamed.hadramy.springbootapp.service;
 
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -16,20 +15,21 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class FilesStorageServiceImpl implements FilesStorageService {
 
-  private final Path uploadsFolder = Paths.get("commissionFolders");
 
   @Override
-  public void save(MultipartFile file) {
+  public void save(MultipartFile file, int folderType) {
     try {
-      Files.copy(file.getInputStream(), this.uploadsFolder.resolve(file.getOriginalFilename()));
+      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType));
+      Files.copy(file.getInputStream(), uploadsFolder.resolve(file.getOriginalFilename()));
     } catch (Exception e) {
       throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
     }
   }
 
   @Override
-  public Resource load(String filename) {
+  public Resource load(String filename, int folderType) {
     try {
+      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType));
       Path file = uploadsFolder.resolve(filename);
       Resource resource = new UrlResource(file.toUri());
 
@@ -44,11 +44,26 @@ public class FilesStorageServiceImpl implements FilesStorageService {
   }
 
   @Override
-  public Stream<Path> loadAll() {
+  public Stream<Path> loadAllFromFolder(int folderType) {
     try {
-      return Files.walk(this.uploadsFolder, 1).filter(path -> !path.equals(this.uploadsFolder)).map(this.uploadsFolder::relativize);
+      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType));
+      return Files.walk(uploadsFolder, 1).filter(path -> !path.equals(uploadsFolder))
+          .map(uploadsFolder::relativize);
     } catch (IOException e) {
       throw new RuntimeException("Could not load the files!");
+    }
+  }
+
+  public String getFolderName(int folderType) {
+    switch (folderType) {
+      case 1:
+        return "Réglementations Fiscales Fr";
+      case 2:
+        return "Rapports Fr";
+      case 3:
+        return "Autres Lois et Réglementations Fr";
+      default:
+        return "none";
     }
   }
 }

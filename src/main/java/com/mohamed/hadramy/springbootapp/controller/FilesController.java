@@ -29,14 +29,14 @@ public class FilesController {
   @Autowired
   FilesStorageService storageService;
 
-  @PostMapping("/upload")
-  public ResponseEntity<ResponseMessage> uploadFiles(@RequestParam("files") MultipartFile[] files) {
+  @PostMapping("/upload/{folderType}")
+  public ResponseEntity<ResponseMessage> uploadFiles(@RequestParam("files") MultipartFile[] files, @PathVariable("folderType") int folderType) {
     String message = "";
     try {
       List<String> fileNames = new ArrayList<>();
 
       Arrays.asList(files).stream().forEach(file -> {
-        storageService.save(file);
+        storageService.save(file, folderType);
         fileNames.add(file.getOriginalFilename());
       });
 
@@ -48,22 +48,21 @@ public class FilesController {
     }
   }
 
-  @GetMapping("/files")
-  public ResponseEntity<List<FileInfo>> getListFiles() {
-    List<FileInfo> fileInfos = storageService.loadAll().map(path -> {
+  @GetMapping("/files/{folderType}")
+  public ResponseEntity<List<FileInfo>> getListFiles(@PathVariable("folderType") int folderType) {
+    List<FileInfo> fileInfos = storageService.loadAllFromFolder(folderType).map(path -> {
       String filename = path.getFileName().toString();
       String url = MvcUriComponentsBuilder
-          .fromMethodName(FilesController.class, "getFile", path.getFileName().toString()).build().toString();
-
+          .fromMethodName(FilesController.class, "getFile", path.getFileName().toString(), folderType).build().toString();
       return new FileInfo(filename, url);
     }).collect(Collectors.toList());
 
     return ResponseEntity.status(HttpStatus.OK).body(fileInfos);
   }
 
-  @GetMapping("/files/{filename:.+}")
-  public ResponseEntity<Resource> getFile(@PathVariable String filename) {
-    Resource file = storageService.load(filename);
+  @GetMapping("/files/{filename:.+}/{folderType}")
+  public ResponseEntity<Resource> getFile(@PathVariable String filename, @PathVariable("folderType") int folderType) {
+    Resource file = storageService.load(filename, folderType);
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"").body(file);
   }
