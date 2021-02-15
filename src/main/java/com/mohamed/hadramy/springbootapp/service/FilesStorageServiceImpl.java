@@ -15,11 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class FilesStorageServiceImpl implements FilesStorageService {
 
-
   @Override
-  public void save(MultipartFile file, int folderType) {
+  public void save(MultipartFile file, int folderType, String language) {
     try {
-      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType));
+      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType, language));
       Files.copy(file.getInputStream(), uploadsFolder.resolve(file.getOriginalFilename()));
     } catch (Exception e) {
       throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
@@ -27,9 +26,9 @@ public class FilesStorageServiceImpl implements FilesStorageService {
   }
 
   @Override
-  public Resource load(String filename, int folderType) {
+  public Resource load(String filename, int folderType, String language) {
     try {
-      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType));
+      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType, language));
       Path file = uploadsFolder.resolve(filename);
       Resource resource = new UrlResource(file.toUri());
 
@@ -44,26 +43,36 @@ public class FilesStorageServiceImpl implements FilesStorageService {
   }
 
   @Override
-  public Stream<Path> loadAllFromFolder(int folderType) {
+  public Stream<Path> loadAllFromFolder(int folderType, String language) {
     try {
-      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType));
-      return Files.walk(uploadsFolder, 1).filter(path -> !path.equals(uploadsFolder))
-          .map(uploadsFolder::relativize);
+      Path uploadsFolder = Paths.get("commissionFolders/" + getFolderName(folderType, language));
+      return Files.walk(uploadsFolder, 1).filter(path -> !path.equals(uploadsFolder)).map(uploadsFolder::relativize);
     } catch (IOException e) {
       throw new RuntimeException("Could not load the files!");
     }
   }
 
-  public String getFolderName(int folderType) {
-    switch (folderType) {
-      case 1:
+  public String getFolderName(int folderType, String language) {
+    if (folderType == 1) {
+      if (language.equals("ar")) {
+        return "Réglementations Fiscales Ar";
+      } else {
         return "Réglementations Fiscales Fr";
-      case 2:
+      }
+    }
+    else if (folderType == 2) {
+      if (language.equals("ar")) {
+        return "Rapports Ar";
+      } else {
         return "Rapports Fr";
-      case 3:
+      }
+    }
+    else{
+      if (language.equals("ar")) {
+        return "Autres Lois et Réglementations Ar";
+      } else {
         return "Autres Lois et Réglementations Fr";
-      default:
-        return "none";
+      }
     }
   }
 }
